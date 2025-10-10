@@ -10,4 +10,8 @@ import { Injectable } from '@nestjs/common';import { PassportStrategy } from '@n
   async validate(payload: any) {
     return { userId: payload.sub, email: payload.email };
   }
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
