@@ -1,30 +1,36 @@
 // import { Module } from '@nestjs/common';
-// import { AppController } from './app.controller';
-// import { AppService } from './app.service';
-
+// import { MongooseModule } from '@nestjs/mongoose';
+// import { ConfigModule } from '@nestjs/config';
 // import { AuthModule } from './auth/auth.module';
 
 // @Module({
-//   imports: [AuthModule],
-
-
-//   controllers: [AppController],
-//   providers: [AppService],
+//   imports: [
+//     ConfigModule.forRoot({
+//       isGlobal: true, // makes env variables available everywhere
+//     }),
+//     MongooseModule.forRoot(process.env.MONGO_URI!), // the ! ensures TypeScript is fine
+//   ],
 // })
 // export class AppModule {}
+
+
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module'; // ✅ Make sure this is imported
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/mydatabase', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
-    UsersModule,
-    AuthModule,
+    MongooseModule.forRoot(process.env.MONGO_URI!),
+    AuthModule, // ✅ Register the AuthModule here
   ],
 })
 export class AppModule {}
+
+
+
+
