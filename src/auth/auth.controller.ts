@@ -1,6 +1,65 @@
+// import { Controller, Post, Body } from '@nestjs/common';
+// import { AuthService } from './auth.service';
 
-import { Controller, Post, Body } from '@nestjs/common';
+// @Controller('auth')
+// export class AuthController {
+//   constructor(private readonly authService: AuthService) {}
+  
+
+//   @Post('login')
+//   async login(@Body() body: { email: string; password: string }) {
+//     const { email, password } = body;
+
+//     // First validate the user
+//     const user = await this.authService.validateUser(email, password);
+//     if (!user) {
+//       return { message: 'Invalid credentials' };
+//     }
+
+//     // Pass the user object to login()
+//     return this.authService.login(user);
+//   }
+
+//   @Post('register')
+//   async register(@Body() body: { name: string; email: string; password: string }) {
+//     const { name, email, password } = body;
+//     return this.authService.register(name, email, password);
+//   }
+// }
+
+// src/auth/auth.controller.ts
+
+
+
+// import { Controller, Post, Body } from '@nestjs/common';
+// import { AuthService } from './auth.service';
+
+// @Controller('auth')
+// export class AuthController {
+//   constructor(private readonly authService: AuthService) {}
+
+//   @Post('register')
+//   async register(@Body() body: { name: string; email: string; password: string }) {
+//     return this.authService.register(body);
+//   }
+
+//   @Post('login')
+//   async login(@Body() body: { email: string; password: string }) {
+//     const { email, password } = body;
+
+//     const user = await this.authService.validateUser(email, password);
+//     if (!user) {
+//       return { message: 'Invalid credentials' };
+//     }
+
+//     return this.authService.login(user);
+//   }
+// }
+
+
+import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -13,13 +72,17 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
-    const { email, password } = body;
-
-    const user = await this.authService.validateUser(email, password);
-    if (!user) {
-      return { message: 'Invalid credentials' };
-    }
-
+    const user = await this.authService.validateUser(body.email, body.password);
+    if (!user) return { message: 'Invalid credentials' };
     return this.authService.login(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Request() req) {
+    return {
+      message: 'This is a protected route',
+      user: req.user,
+    };
   }
 }
