@@ -55,7 +55,8 @@ import { JwtStrategy } from './jwt.strategy';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     PassportModule,
     JwtModule.register({
-      secret: 'super-secret-key', // Replace with env var in real apps
+      secret: 'process.env.JWT_SECRET', // Replace with env var in real apps
+      // secret: 'super-secret-key'
       signOptions: { expiresIn: '1d' },
     }),
   ],
