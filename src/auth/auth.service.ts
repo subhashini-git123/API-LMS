@@ -121,12 +121,56 @@
 
 
 
-import { Injectable } from '@nestjs/common';
+// import { Injectable } from '@nestjs/common';
+// import { JwtService } from '@nestjs/jwt';
+// import { InjectModel } from '@nestjs/mongoose';
+// import { Model } from 'mongoose';
+// import * as bcrypt from 'bcrypt';
+// import { User, UserDocument } from '../users/schemas/user.schema';
+
+// @Injectable()
+// export class AuthService {
+//   constructor(
+//     @InjectModel(User.name) private userModel: Model<UserDocument>,
+//     private jwtService: JwtService,
+//   ) {}
+
+//   async register(userData: { name: string; email: string; password: string }) {
+//     const { name, email, password } = userData;
+//     const existingUser = await this.userModel.findOne({ email });
+//     if (existingUser) return { message: 'User already exists' };
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     const newUser = new this.userModel({ name, email, password: hashedPassword });
+//     await newUser.save();
+//     return { message: 'User registered successfully', user: { name, email } };
+//   }
+
+//   async validateUser(email: string, password: string): Promise<UserDocument | null> {
+//     const user = await this.userModel.findOne({ email });
+//     if (!user) return null;
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     return isMatch ? user : null;
+//   }
+
+//   async login(user: UserDocument) {
+//     const payload = { email: user.email, sub: user._id };
+//     const token = this.jwtService.sign(payload);
+//     return {
+//       message: 'Login successful',
+//       token,
+//     };
+//   }
+// }
+
+
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { User, UserDocument, Role } from '../users/schemas/user.schema';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -134,15 +178,34 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(userData: { name: string; email: string; password: string }) {
-    const { name, email, password } = userData;
-    const existingUser = await this.userModel.findOne({ email });
-    if (existingUser) return { message: 'User already exists' };
+  async register(userData: { name: string; email: string; password: string; role: Role }) {
+    const { name, email, password, role } = userData;
 
+    // check if email already registered
+    const existingUser = await this.userModel.findOne({ email });
+    if (existingUser) throw new ConflictException('User already exists');
+
+    // validate role
+    const validRoles = Object.values(Role);
+    if (!validRoles.includes(role)) {
+      throw new BadRequestException(`Invalid role. Valid roles: ${validRoles.join(', ')}`);
+    }
+
+    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new this.userModel({ name, email, password: hashedPassword });
+    const newUser = new this.userModel({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+    });
+
     await newUser.save();
-    return { message: 'User registered successfully', user: { name, email } };
+
+    return {
+      message: 'User registered successfully',
+      user: { name, email, role },
+    };
   }
 
   async validateUser(email: string, password: string): Promise<UserDocument | null> {
@@ -153,11 +216,8 @@ export class AuthService {
   }
 
   async login(user: UserDocument) {
-    const payload = { email: user.email, sub: user._id };
+    const payload = { email: user.email, sub: user._id, role: user.role };
     const token = this.jwtService.sign(payload);
-    return {
-      message: 'Login successful',
-      token,
-    };
+    return { message: 'Login successful', token };
   }
 }
