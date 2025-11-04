@@ -1,72 +1,29 @@
-// import { Module } from '@nestjs/common';
-// import { AuthService } from './auth.service';
-// import { AuthController } from './auth.controller';
-// import { UsersModule } from '../users/users.module';
-// import { JwtModule } from '@nestjs/jwt';
-// import { ConfigModule, ConfigService } from '@nestjs/config';
-
-// @Module({
-//   imports: [
-//     UsersModule,
-//     JwtModule.registerAsync({
-//       imports: [ConfigModule],
-//       inject: [ConfigService],
-//       useFactory: async (configService: ConfigService) => ({
-//         secret: configService.get('JWT_SECRET'),
-//         signOptions: { expiresIn: configService.get('JWT_EXPIRATION') },
-//       }),
-//     }),
-//   ],
-//   providers: [AuthService],
-//   controllers: [AuthController],
-// })
-// export class AuthModule {}
-// src/auth/auth.module.ts
-
-
-// import { Module } from '@nestjs/common';
-// import { MongooseModule } from '@nestjs/mongoose';
-// import { AuthService } from './auth.service';
-// import { AuthController } from './auth.controller';
-// import { User, UserSchema } from '../users/schemas/user.schema';
-
-// @Module({
-//   imports: [
-//     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-//   ],
-//   controllers: [AuthController],
-//   providers: [AuthService],
-// })
-// export class AuthModule {}
-
-
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MongooseModule } from '@nestjs/mongoose';
-
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { JwtStrategy } from './jwt.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    ConfigModule, // ✅ This line is essential!
     PassportModule,
-    JwtModule.register({
-      secret: 'process.env.JWT_SECRET', // Replace with env var in real apps
-      // secret: 'super-secret-key'
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'defaultSecret',
+        signOptions: { expiresIn: '1h' },
+      }),
     }),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}
-
-
-
-
-
-

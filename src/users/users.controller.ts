@@ -1,12 +1,25 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles/roles.guard';
+import { Roles } from '../auth/roles/roles.decorator';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) {}
 
-  @Get(':email')
-  async getUserByEmail(@Param('email') email: string) {
-    return this.usersService.findByEmail(email);
+  // ✅ Admin or instructor can list all users
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'instructor')
+  @Get()
+  async findAll() {
+    return this.usersService.findAll();
+  }
+
+  // ✅ Any authenticated user can get their own info
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async findById(@Param('id') id: string) {
+    return this.usersService.findById(id);
   }
 }

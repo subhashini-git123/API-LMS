@@ -1,126 +1,77 @@
-// import { Controller,Post,Body,Get,UseGuards,Request,} from '@nestjs/common';
+// import {
+//   Controller,
+//   Post,
+//   Body,
+//   UseGuards,
+//   Get,
+//   Req,
+// } from '@nestjs/common';
 // import { AuthService } from './auth.service';
-// import { JwtAuthGuard } from './jwt-auth.guard';
-// import { RegisterDto } from './dto/register.dto';
+// import { CreateUserDto } from './dto/create-user.dto';
 // import { LoginDto } from './dto/login.dto';
+// import { JwtAuthGuard } from './jwt-auth.guard';
+// import { Roles } from '../auth/roles/roles.decorator';
+// import { RolesGuard } from '../auth/roles/roles.guard';
 
 // @Controller('auth')
 // export class AuthController {
 //   constructor(private readonly authService: AuthService) {}
 
-//   // Register endpoint using DTO with validation
+//   // ✅ Register
 //   @Post('register')
-//   async register(@Body() body: RegisterDto) {
-//     return this.authService.register(body);
+//   async register(@Body() createUserDto: CreateUserDto) {
+//     return this.authService.register(createUserDto);
 //   }
 
-//   // Login endpoint using DTO with validation
+//   // ✅ Login
 //   @Post('login')
-//   async login(@Body() body: LoginDto) {
-//     const user = await this.authService.validateUser(body.email, body.password);
-//     if (!user) {
-//       return { message: 'Invalid credentials' };
-//     }
-//     return this.authService.login(user);
+//   async login(@Body() loginDto: LoginDto) {
+//     return this.authService.login(loginDto);
 //   }
 
-//   // Protected route with JWT guard
-//   @UseGuards(JwtAuthGuard)
+//   // ✅ Protected route (example)
+//   @UseGuards(JwtAuthGuard, RolesGuard)
+//   @Roles('admin', 'instructor', 'student')
 //   @Get('profile')
-//   getProfile(@Request() req) {
-//     return {
-//       message: 'This is a protected route',
-//       user: req.user,
-//     };
+//   getProfile(@Req() req) {
+//     return req.user; // this is populated by JwtStrategy validate()
 //   }
 // }
 
+// import { Controller, Post, Body } from '@nestjs/common';
+// import { AuthService } from './auth.service';
+//  import { CreateUserDto } from './dto/create-user.dto';
+//   import { LoginDto } from './dto/login.dto'; @Controller('auth')
+//    export class AuthController { constructor(private readonly authService: AuthService)
+//      {
 
+//      }
+//      @Post('register') register(@Body() createUserDto: CreateUserDto)
+//      {
+//       return this.authService.register(createUserDto);
 
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Body, 
-  UseGuards, 
-  Request, 
-  UnauthorizedException 
-} from '@nestjs/common';
+//     } @Post('login') login(@Body() loginDto: LoginDto)
+//     {
+//       return this.authService.login(loginDto);
+//      }
+//      }
+
+import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { RolesGuard } from './roles/roles.guard';
-import { Roles } from './roles/roles.decorator';
-import { Role } from '../users/schemas/user.schema';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
-
-@ApiTags('Auth')
+import { CreateUserDto } from './dto/create-user.dto';
+import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  // 🧩 Register (anyone can register)
-  @Post('register')
-  @ApiOperation({ summary: 'Register a new user (anyone can register)' })
-  @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', example: 'John Doe' },
-        email: { type: 'string', example: 'john@example.com' },
-        password: { type: 'string', example: 'Password123' },
-        role: { 
-          type: 'string', 
-          enum: ['Admin/HR', 'Manager', 'Trainee'],
-          example: 'Trainee'
-        },
-      },
-      required: ['name', 'email', 'password', 'role'],
-    },
-  })
-  register(@Body() userData) {
-    return this.authService.register(userData);
+  @Post('register') register(@Body() dto: CreateUserDto) {
+    return this.authService.register(dto);
   }
-
-  // 🧩 Login route
-  @Post('login')
-  @ApiOperation({ summary: 'Login with email and password' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        email: { type: 'string', example: 'john@example.com' },
-        password: { type: 'string', example: 'Password123' },
-      },
-      required: ['email', 'password'],
-    },
-  })
-  async login(@Body() body) {
-    const user = await this.authService.validateUser(body.email, body.password);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-    return this.authService.login(user);
+  @Post('login') login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
-
-  // 🧩 Protected route (Profile)
-  // Accessible by any authenticated user (not role-restricted)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
-  @Get('profile')
-  @ApiOperation({ summary: 'Get your own profile (any logged-in user)' })
-  @ApiResponse({ status: 200, description: 'Returns logged-in user info' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  getProfile(@Request() req) {
-    // req.user comes from JWT payload (via JwtStrategy)
-    return {
-      message: 'Profile retrieved successfully',
-      user: {
-        id: req.user.userId,
-        email: req.user.email,
-        role: req.user.role,
-      },
-    };
+  // ✅ Protected route - requires Bearer token
+  @UseGuards(JwtAuthGuard) @Get('profile') async getProfile(@Req() req) {
+    return this.authService.getProfile(req.user._id);
   }
 }

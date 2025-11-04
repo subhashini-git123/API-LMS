@@ -1,112 +1,65 @@
-
-// // import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-// // import { Document } from 'mongoose';
-// // import * as bcrypt from 'bcrypt';
-
-// // export type UserDocument = User & Document;
-
-// // @Schema()
-// // export class User {
-// //   @Prop({ required: true })
-// //   name: string;
-
-// //   @Prop({ required: true, unique: true })
-// //   email: string;
-
-// //   @Prop({ required: true })
-// //   password: string;
-
-// //   async validatePassword(password: string): Promise<boolean> {
-// //     return bcrypt.compare(password, this.password);
-// //   }
-// // }
-
-// // export const UserSchema = SchemaFactory.createForClass(User);
-
-// // UserSchema.pre<UserDocument>('save', async function(next) {
-// //   if (!this.isModified('password')) return next();
-// //   const salt = await bcrypt.genSalt();
-// //   this.password = await bcrypt.hash(this.password, salt);
-// //   next();
-// // });
-
 // import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 // import { Document } from 'mongoose';
+// import * as bcrypt from 'bcrypt';
 
-// @Schema()
-// export class User extends Document {
-//   @Prop({ required: true })
-//   name: string;
+// export type UserDocument = User & Document;
 
-//   @Prop({ required: true, unique: true })
-//   email: string;
-
-//   @Prop({ required: true })
-//   password: string;
+// export enum Role {
+// USER = 'user',
+// MANAGER = 'manager',
+// ADMIN = 'admin',
 // }
 
-// // Mongoose schema
-// export const UserSchema = SchemaFactory.createForClass(User);
-
-// // Type for Mongoose Document
-// export type UserDocument = User & Document;
-// src/users/schemas/user.schema.ts
-
-
-// import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-// import { Document } from 'mongoose';
-
-// export type UserDocument = User & Document;
-
-// @Schema()
+// @Schema({ timestamps: true })
 // export class User {
-//   @Prop({ required: true })
-//   name: string;
+// @Prop({ required: true })
+// name: string;
 
-//   @Prop({ required: true, unique: true })
-//   email: string;
+// @Prop({ required: true, unique: true })
+// email: string;
 
-//   @Prop({ required: true })
-//   password: string;
+// @Prop({ required: true })
+// password: string;
+
+// @Prop({ enum: Role, default: Role.USER })
+// role: Role;
+
+// // Optional: Hash password before saving
+// async hashPassword(): Promise<void> {
+// const salt = await bcrypt.genSalt();
+// this.password = await bcrypt.hash(this.password, salt);
+// }
+
+// // Optional: Compare password for login
+// async comparePassword(attempt: string): Promise<boolean> {
+// return bcrypt.compare(attempt, this.password);
+// }
 // }
 
 // export const UserSchema = SchemaFactory.createForClass(User);
 
-
-
-// import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-// import { Document } from 'mongoose';
-
-// export type UserDocument = User & Document;
-
-// @Schema()
-// export class User {
-//   @Prop({ required: true })
-//   name: string;
-
-//   @Prop({ required: true, unique: true })
-//   email: string;
-
-//   @Prop({ required: true })
-//   password: string;
+// // Pre-save hook to hash password automatically
+// UserSchema.pre<UserDocument>('save', async function (next) {
+// if (this.isModified('password')) {
+// const salt = await bcrypt.genSalt();
+// this.password = await bcrypt.hash(this.password, salt);
 // }
-
-// export const UserSchema = SchemaFactory.createForClass(User);
-
-
+// next();
+// });
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
+// ✅ Define role enum
 export enum Role {
-  ADMIN = 'Admin/HR',
-  MANAGER = 'Manager',
-  TRAINEE = 'Trainee',
+  Admin = 'admin',
+  User = 'user',
+  Student = 'student',
 }
 
-@Schema()
+@Schema({ timestamps: true })
 export class User {
   @Prop({ required: true })
   name: string;
@@ -117,11 +70,8 @@ export class User {
   @Prop({ required: true })
   password: string;
 
-  @Prop({
-    type: String,
-    enum: Role,
-    default: Role.TRAINEE,
-  })
+  // ✅ Attach role enum to user schema
+  @Prop({ type: String, enum: Role, default: Role.Student })
   role: Role;
 }
 
