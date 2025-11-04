@@ -1,223 +1,103 @@
-// import { Injectable, UnauthorizedException } from '@nestjs/common';
-// import { UsersService } from '../users/users.service';
+// import {
+//   Injectable,
+//   UnauthorizedException,
+//   ConflictException,
+// } from '@nestjs/common';
 // import { JwtService } from '@nestjs/jwt';
 // import * as bcrypt from 'bcrypt';
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     private usersService: UsersService,
-//     private jwtService: JwtService,
-//   ) {}
-
-//   async register(name: string, email: string, password: string) {
-//     const existingUser = await this.usersService.findByEmail(email);
-//     if (existingUser) throw new UnauthorizedException('User already exists');
-//     const user = await this.usersService.create({ name, email, password });
-//     const payload = { email: user.email, sub: user.id };
-//     return {
-//       access_token: this.jwtService.sign(payload),
-//     };
-//   }
-
-//   async login(email: string, password: string) {
-//     const user = await this.usersService.findByEmail(email);
-//     if (!user) throw new UnauthorizedException('Invalid credentials');
-//     const valid = await bcrypt.compare(password, user.password);
-//     if (!valid) throw new UnauthorizedException('Invalid credentials');
-//     const payload = { email: user.email, sub: user.id };
-//     return {
-//       access_token: this.jwtService.sign(payload),
-//     };
-//   }
-// }
-// import { Injectable } from '@nestjs/common';
-// import { JwtService } from '@nestjs/jwt';
-// import { UsersService } from '../users/users.service';
-// import * as bcrypt from 'bcrypt';
-// import { User } from '../users/schemas/user.schema';
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     private usersService: UsersService,
-//     private jwtService: JwtService,
-//   ) {}
-
-//   async validateUser(email: string, password: string): Promise<User | null> {
-//     const user = await this.usersService.findByEmail(email);
-//     if (user && (await bcrypt.compare(password, user.password))) {
-//       return user;
-//     }
-//     return null;
-//   }
-
-//   async login(user: User) {
-//     const payload = { email: user.email, sub: user._id }; // Use _id from Mongoose Document
-//     return {
-//       access_token: this.jwtService.sign(payload),
-//     };
-//   }
-
-//   async register(name: string, email: string, password: string) {
-//     const user = await this.usersService.create({ name, email, password });
-//     return this.login(user);
-//   }
-// }
-
-
-// src/auth/auth.service.ts
-
-
-
-
-// import { Injectable } from '@nestjs/common';
 // import { InjectModel } from '@nestjs/mongoose';
 // import { Model } from 'mongoose';
-// import * as bcrypt from 'bcrypt';
 // import { User, UserDocument } from '../users/schemas/user.schema';
+// import { CreateUserDto } from './dto/create-user.dto';
+// import { LoginDto } from './dto/login.dto';
+// import { Types } from 'mongoose';
 
 // @Injectable()
 // export class AuthService {
-//   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+//   constructor(
+//     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+//     private readonly jwtService: JwtService,
+//   ) {}
 
-//   async register(userData: { name: string; email: string; password: string }) {
-//     const { name, email, password } = userData;
+//   // ✅ Register User
+//   async register(createUserDto: CreateUserDto): Promise<UserDocument> {
+//     const { name, email, password, role } = createUserDto;
 
-//     // Check if user already exists
 //     const existingUser = await this.userModel.findOne({ email });
 //     if (existingUser) {
-//       return { message: 'User already exists' };
+//       throw new ConflictException('User already exists');
 //     }
 
-//     // Hash password and save user
 //     const hashedPassword = await bcrypt.hash(password, 10);
-//     const newUser = new this.userModel({ name, email, password: hashedPassword });
-//     await newUser.save();
 
-//     return { message: 'User registered successfully', user: { name, email } };
+//     const newUser = new this.userModel({
+//       name,
+//       email,
+//       password: hashedPassword,
+//       role: role || 'student', // default role
+//     });
+
+//     return newUser.save();
 //   }
 
-//   async validateUser(email: string, password: string): Promise<UserDocument | null> {
+//   // ✅ Login User
+//   async login(loginDto: LoginDto) {
+//     const { email, password } = loginDto;
+// console.log('Login attempt for email:', email);
+
 //     const user = await this.userModel.findOne({ email });
-//     if (!user) return null;
+//     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     return isMatch ? user : null;
-//   }
+//     const isPasswordValid = await bcrypt.compare(password, user.password);
+//     console.log('Password valid?', isPasswordValid);
+//     if (!isPasswordValid)
+//       throw new UnauthorizedException('Invalid credentials');
 
-//   async login(user: UserDocument) {
-//     // Normally you'd return a JWT here
+//     // Create JWT payload
+//     const payload = {
+//       sub: (user._id as Types.ObjectId).toString(),
+//   email: user.email,
+//   role: user.role,
+//     };
+
+//     const token = await this.jwtService.signAsync(payload);
+
 //     return {
 //       message: 'Login successful',
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//       },
+//       access_token: token,
 //     };
+//   }
+
+//   // ✅ Validate User (for protected routes)
+//   async validateUser(payload: any): Promise<UserDocument | null> {
+//     const user = await this.userModel.findById(payload.sub).select('-password');
+//     return user as unknown as UserDocument | null; // Fix TypeScript inference
+//   }
+
+//   // ✅ Get Profile (Protected Route)
+//   async getProfile(userId: string): Promise<UserDocument | null> {
+//     const user = await this.userModel.findById(userId).select('-password');
+//     return user as unknown as UserDocument | null;
 //   }
 // }
 
 
 
-// import { Injectable } from '@nestjs/common';
-// import { JwtService } from '@nestjs/jwt';
-// import { InjectModel } from '@nestjs/mongoose';
-// import { Model } from 'mongoose';
-// import * as bcrypt from 'bcrypt';
-// import { User, UserDocument } from '../users/schemas/user.schema';
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     @InjectModel(User.name) private userModel: Model<UserDocument>,
-//     private jwtService: JwtService,
-//   ) {}
-
-//   async register(userData: { name: string; email: string; password: string }) {
-//     const { name, email, password } = userData;
-//     const existingUser = await this.userModel.findOne({ email });
-//     if (existingUser) return { message: 'User already exists' };
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     const newUser = new this.userModel({ name, email, password: hashedPassword });
-//     await newUser.save();
-//     return { message: 'User registered successfully', user: { name, email } };
-//   }
-
-//   async validateUser(email: string, password: string): Promise<UserDocument | null> {
-//     const user = await this.userModel.findOne({ email });
-//     if (!user) return null;
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     return isMatch ? user : null;
-//   }
-
-//   async login(user: UserDocument) {
-//     const payload = { email: user.email, sub: user._id };
-//     const token = this.jwtService.sign(payload);
-//     return {
-//       message: 'Login successful',
-//       token,
-//     };
-//   }
-// }
-
-
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common'; 
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import * as bcrypt from 'bcrypt';
-import { User, UserDocument, Role } from '../users/schemas/user.schema';
-
-@Injectable()
-export class AuthService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private jwtService: JwtService,
-  ) {}
-
-  async register(userData: { name: string; email: string; password: string; role: Role }) {
-    const { name, email, password, role } = userData;
-
-    // check if email already registered
-    const existingUser = await this.userModel.findOne({ email });
-    if (existingUser) throw new ConflictException('User already exists');
-
-    // validate role
-    const validRoles = Object.values(Role);
-    if (!validRoles.includes(role)) {
-      throw new BadRequestException(`Invalid role. Valid roles: ${validRoles.join(', ')}`);
-    }
-
-    // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new this.userModel({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    });
-
-    await newUser.save();
-
-    return {
-      message: 'User registered successfully',
-      user: { name, email, role },
-    };
-  }
-
-  async validateUser(email: string, password: string): Promise<UserDocument | null> {
-    const user = await this.userModel.findOne({ email });
-    if (!user) return null;
-    const isMatch = await bcrypt.compare(password, user.password);
-    return isMatch ? user : null;
-  }
-
-  async login(user: UserDocument) {
-    const payload = { email: user.email, sub: user._id, role: user.role };
-    const token = this.jwtService.sign(payload);
-    return { message: 'Login successful', token };
-  }
-}
+ import * as bcrypt from 'bcrypt'; 
+import { InjectModel } from '@nestjs/mongoose'; import { Model, Types } from 'mongoose'; 
+import { User, UserDocument } from '../users/schemas/user.schema';
+ import { CreateUserDto } from './dto/create-user.dto';
+  import { LoginDto } from './dto/login.dto';
+  @Injectable()
+   export class AuthService { constructor(
+     @InjectModel(User.name) private readonly userModel: Model<UserDocument>, private readonly jwtService: JwtService, ) {}
+     // ✅ Register user 
+     async register(createUserDto: CreateUserDto): Promise<UserDocument> { const { name, email, password, role } = createUserDto; const existingUser = await this.userModel.findOne({ email: email.trim() }); if (existingUser) throw new ConflictException('User already exists'); const hashedPassword = await bcrypt.hash(password.trim(), 10); const newUser = new this.userModel({ name, email: email.trim(), password: hashedPassword, role: role || 'user', }); return newUser.save(); }
+     // ✅ Login user 
+     async login(loginDto: LoginDto) { const email = loginDto.email.trim(); const password = loginDto.password.trim(); const user = await this.userModel.findOne({ email }); if (!user) throw new UnauthorizedException('Invalid credentials'); const isPasswordValid = await bcrypt.compare(password, user.password); if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials'); const payload = { sub: (user._id as Types.ObjectId).toString(), email: user.email, role: user.role }; const token = await this.jwtService.signAsync(payload); return { message: 'Login successful', access_token: token }; }
+     // ✅ Validate JWT 
+     async validateUser(payload: any): Promise<UserDocument | null> { return this.userModel.findById(payload.sub).select('-password'); } 
+     // ✅ Get user profile by ID
+     async getProfile(userId: string): Promise<UserDocument | null> { return this.userModel.findById(userId).select('-password'); } }
