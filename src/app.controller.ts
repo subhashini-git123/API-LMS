@@ -27,20 +27,28 @@ export class AppController {
     };
   }
 
-  // 🛡️ Admin-only route (Role-based access)
+  // 🛡️ Admin-only route
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.Admin)
   @Get('admin')
-  @Roles(Role.Admin)
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
   getAdminDashboard() {
     return { message: 'Welcome Admin! You have full access.' };
   }
 
-  @Get('student')
-  @Roles(Role.Student)
+  // 👔 Manager-only route
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  getStudentDashboard() {
-    return { message: 'Welcome Student! Limited access granted.' };
+  @Roles(Role.Manager)
+  @Get('manager')
+  getManagerDashboard() {
+    return { message: 'Welcome Manager! Limited access granted.' };
+  }
+
+  // 👨‍🏫 Trainee-only route
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.Trainee)
+  @Get('trainee')
+  getTraineeDashboard() {
+    return { message: 'Welcome Trainee! Limited access granted.' };
   }
 }
+
