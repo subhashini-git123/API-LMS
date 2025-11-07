@@ -3,14 +3,15 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
+import { Role } from './schemas/user.schema';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // ✅ Admin or instructor can list all users
+  // ✅ Admin or trainee can list all users
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'instructor')
+  @Roles(Role.Admin, Role.Trainee)
   @Get()
   async findAll() {
     return this.usersService.findAll();

@@ -12,6 +12,6 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @IsIn(['student', 'instructor', 'admin'], { message: 'Invalid role' })
+  @IsIn(['trainee', 'manager', 'admin'], { message: 'Invalid role' })
   role?: string;
 }
