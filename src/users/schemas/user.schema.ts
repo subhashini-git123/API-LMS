@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-// ✅ Define role enum
+
 export enum Role {
   Admin = 'admin',
   Trainee = 'trainee',
